@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>거북이 경주 (모바일 단독)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="theme-color" content="#1e1e1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overscroll-behavior-y: contain;
+            user-select: none;
+            /* Prevent text selection on touch */
+        }
+
+        .card {
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .track-container {
+            background-color: #A0522D;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+            border: 10px solid #4caf50;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            min-height: 300px;
+        }
+
+        .turtle-lane {
+            height: 60px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .turtle-lane {
+                height: 80px;
+            }
+        }
+
+        .turtle-lane:last-child {
+            border-bottom: none;
+        }
+
+        .turtle-icon {
+            font-size: 40px;
+            position: absolute;
+            transition: left 1s linear;
+            /* Smooth movement */
+            z-index: 10;
+            filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+            line-height: 1;
+            left: 0%;
+        }
+
+        @media (min-width: 768px) {
+            .turtle-icon {
+                font-size: 50px;
+            }
+        }
+
+        .turtle-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 6px;
+            border-radius: 10px;
+            position: absolute;
+            top: -15px;
+            left: 5px;
+            white-space: nowrap;
+        }
+
+        .finish-line {
+            position: absolute;
+            right: 20px;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            background: repeating-linear-gradient(45deg, #fff, #fff 10px, #000 10px, #000 20px);
+            z-index: 1;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .penalty-input {
+            background-color: #444;
+            border: 1px solid #555;
+            color: white;
+        }
+
+        .penalty-input:focus {
+            background-color: #555;
+            color: white;
+        }
+
+        .status-badge {
+            font-size: 1.0em;
+            padding: 8px 15px;
+        }
+
+        .penalty-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFD700;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 20;
+            display: none;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        @media (min-width: 768px) {
+            .penalty-text {
+                font-size: 24px;
+            }
+        }
+
+        .obstacle-icon {
+            position: absolute;
+            font-size: 24px;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            top: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container my-3 my-md-5">
+        <div class="row justify-content-center">
+
+            <!-- Main Content (Track) -->
+            <div class="col-md-8 col-lg-9 order-1 order-md-2 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2 mb-md-4">
+                    <h1 class="h3 h1-md">🏁 거북이 경주 (단독 실행)</h1>
+                    <span id="gameStatus" class="badge bg-secondary status-badge">준비됨</span>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div
+                                class="card-body text-center d-flex justify-content-center align-items-center gap-4 py-2">
+                                <h6 class="m-0">현재 1등:</h6>
+                                <h3 id="leaderName" class="m-0 text-warning">-</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Race Track -->
+                <div class="card">
+                    <div class="card-body p-2 p-md-3">
+                        <h4 class="h5 h4-md">실시간 트랙</h4>
+                        <div class="track-container" id="track">
+                            <div class="finish-line"></div>
+                            <div class="text-center text-muted p-5">설정에서 라인업을 해주세요.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Logs -->
+                <div class="card mt-3">
+                    <div class="card-body p-2 p-md-3">
+                        <h5 class="h6 h5-md">🎙️ 경기 중계</h5>
+                        <div id="gameLogs" class="bg-dark p-2 rounded"
+                            style="height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.8em; color: #00ff00;">
+                            <div class="text-muted">경기가 시작되면 중계가 표시됩니다.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar (Settings) -->
+            <div class="col-md-4 col-lg-3 mb-4 order-2 order-md-1">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="mb-4 h4">🐢 설정</h3>
+
+                        <div class="mb-3">
+                            <label class="form-label">참가자 수</label>
+                            <input type="number" id="numTurtles" class="form-control penalty-input" value="5" min="2"
+                                max="8">
+                        </div>
+
+                        <button class="btn btn-outline-light w-100 mb-3" onclick="generatePenaltyInputs()">벌칙
+                            설정하기</button>
+
+                        <div id="penaltyInputs" class="mb-4"></div>
+
+                        <hr>
+
+                        <h3 class="mb-3 h4">제어</h3>
+                        <button class="btn btn-primary w-100 mb-2" onclick="setupGame()">라인업 (Line Up)</button>
+                        <button class="btn btn-success w-100 mb-2" onclick="startGame()" id="btnStart" disabled>경주
+                            시작</button>
+                        <button class="btn btn-danger w-100 mb-2" onclick="resetGame()">초기화</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Game Logic (Ported from Python) ---
+
+        const COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#800080', '#FFA500', '#00FFFF', '#FFC0CB'];
+
+        class Turtle {
+            constructor(id, name, color) {
+                this.id = id;
+                this.name = name;
+                this.color = color;
+                this.progress = 0.0;
+                this.finished = false;
+                this.speed = 0.0;
+
+                // Gamification
+                this.is_stopped = false;
+                this.stop_timer = 0;
+                this.has_obstacle = false;
+                this.hit_obstacle = false;
+                this.obstacle_history = [];
+            }
+        }
+
+        class RaceGame {
+            constructor() {
+                this.turtles = [];
+                this.is_racing = false;
+                this.is_finished = false;
+                this.rankings = [];
+                this.logs = [];
+                this.intervalId = null;
+            }
+
+            log(msg) {
+                this.logs.push(msg);
+                updateLogsUI();
+            }
+
+            setup(num, names) {
+                this.is_racing = false;
+                this.is_finished = false;
+                this.rankings = [];
+                this.turtles = [];
+                this.logs = [];
+
+                // Obstacle Logic
+                const num_obstacles = Math.floor(Math.random() * num) + 1; // 1 to num
+                const indices = Array.from({ length: num }, (_, i) => i);
+                // Shuffle indices
+                for (let i = indices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [indices[i], indices[j]] = [indices[j], indices[i]];
+                }
+                const obstacle_indices = indices.slice(0, num_obstacles);
+
+                for (let i = 1; i <= num; i++) {
+                    const color = COLORS[(i - 1) % COLORS.length];
+                    const name = names[i] || `#${i}`;
+                    const t = new Turtle(i, name, color);
+
+                    if (obstacle_indices.includes(i - 1)) {
+                        t.has_obstacle = true;
+                    }
+                    this.turtles.push(t);
+                }
+            }
+
+            start() {
+                if (this.is_racing || this.is_finished) return;
+                this.is_racing = true;
+                this.log("🏁 경주가 시작되었습니다!");
+
+                // Game Loop (1 Turn = 1 Second)
+                this.intervalId = setInterval(() => this.raceLogic(), 1000);
+            }
+
+            raceLogic() {
+                if (!this.is_racing) return;
+
+                let all_finished = true;
+
+                this.turtles.forEach(t => {
+                    if (t.finished) return;
+
+                    all_finished = false;
+
+                    // 1. Stop Check
+                    if (t.is_stopped) {
+                        t.stop_timer -= 1;
+                        if (t.stop_timer <= 0) {
+                            t.is_stopped = false;
+                            this.log(`✅ ${t.name}의 정지가 풀렸습니다. 다시 달립니다!`);
+                        }
+                        return;
+                    }
+
+                    // 2. Move
+                    // Speed 5.0 ~ 30.0
+                    t.speed = (Math.random() * 25.0 + 5.0).toFixed(1);
+                    t.progress += parseFloat(t.speed);
+
+                    // 3. Obstacle Check
+                    if (t.has_obstacle && !t.hit_obstacle && t.progress < 90 && Math.random() < 0.4) {
+                        t.hit_obstacle = true;
+                        t.is_stopped = true;
+
+                        const types = ['wind', 'hurdle', 'stone', 'puddle'];
+                        const obs_type = types[Math.floor(Math.random() * types.length)];
+                        let msg = "";
+
+                        if (obs_type === 'wind') {
+                            t.stop_timer = 1;
+                            msg = `🌬️ ${t.name}에게 강한 바람이 불어 1초간 멈춥니다!`;
+                        } else if (obs_type === 'hurdle') {
+                            t.stop_timer = 1;
+                            msg = `🚧 ${t.name}가 허들에 걸려 1초간 멈춥니다!`;
+                        } else if (obs_type === 'stone') {
+                            t.stop_timer = 2;
+                            msg = `🪨 ${t.name}가 돌부리에 걸려 2초간 멈춥니다!`;
+                        } else if (obs_type === 'puddle') {
+                            t.stop_timer = 3;
+                            msg = `💧 ${t.name}가 물웅덩이에 빠져 3초간 멈춥니다!`;
+                        }
+
+                        t.obstacle_history.push({ type: obs_type, pos: t.progress });
+                        this.log(msg);
+                    }
+
+                    // Check Finish
+                    if (t.progress >= 100) {
+                        t.progress = 100;
+                        t.finished = true;
+                        this.rankings.push(t);
+                        this.log(`🎉 ${t.name} 결승선 통과! (${this.rankings.length}등)`);
+                    }
+                });
+
+                updateUI(); // Update screen
+
+                if (all_finished) {
+                    this.is_racing = false;
+                    this.is_finished = true;
+                    this.log("🏆 모든 거북이가 완주했습니다!");
+                    clearInterval(this.intervalId);
+                    document.getElementById('gameStatus').className = 'badge bg-success status-badge';
+                    document.getElementById('gameStatus').innerText = '경기 종료! 🏆';
+                }
+            }
+        }
+
+        // --- UI Logic ---
+
+        const game = new RaceGame();
+        let penalties = {};
+
+        function generatePenaltyInputs() {
+            const num = document.getElementById('numTurtles').value;
+            const container = document.getElementById('penaltyInputs');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= num; i++) {
+                const div = document.createElement('div');
+                div.className = 'mb-3 p-2 border rounded bg-dark';
+                div.innerHTML = `
+                    <label class="small text-muted mb-1">${i}번 참가자</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="text" class="form-control form-control-sm penalty-input" id="name_${i}" placeholder="이름" value="#${i}">
+                        </div>
+                        <div class="col-6">
+                            <input type="text" class="form-control form-control-sm penalty-input" id="penalty_${i}" placeholder="벌칙">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function setupGame() {
+            const num = parseInt(document.getElementById('numTurtles').value);
+            let names = {};
+            penalties = {};
+
+            for (let i = 1; i <= num; i++) {
+                const nameInput = document.getElementById('name_' + i);
+                const penaltyInput = document.getElementById('penalty_' + i);
+                if (nameInput) names[i] = nameInput.value || `#${i}`;
+                if (penaltyInput) penalties[i] = penaltyInput.value;
+            }
+
+            game.setup(num, names);
+            renderTrack(game.turtles);
+
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('gameStatus').className = 'badge bg-info status-badge';
+            document.getElementById('gameStatus').innerText = '준비 완료';
+            document.getElementById('leaderName').innerText = '-';
+            document.getElementById('gameLogs').innerHTML = '<div class="text-muted">경기가 시작되면 중계가 표시됩니다.</div>';
+        }
+
+        function startGame() {
+            game.start();
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('gameStatus').className = 'badge bg-warning text-dark status-badge';
+            document.getElementById('gameStatus').innerText = '경주 중! 🐢💨';
+
+            // Clear penalties
+            document.querySelectorAll('.penalty-text').forEach(el => el.style.display = 'none');
+        }
+
+        function resetGame() {
+            location.reload();
+        }
+
+        function renderTrack(turtles) {
+            const container = document.getElementById('track');
+            container.innerHTML = '<div class="finish-line"></div>';
+
+            turtles.forEach(t => {
+                const lane = document.createElement('div');
+                lane.className = 'turtle-lane';
+                lane.id = `lane_${t.id}`;
+                lane.innerHTML = `
+                    <div class="penalty-text"></div>
+                    <div class="turtle-icon" id="turtle_${t.id}" style="color: ${t.color}; left: 0%;">
+                        🐢 <span class="turtle-label">${t.name}</span>
+                    </div>
+                `;
+                container.appendChild(lane);
+            });
+        }
+
+        function updateUI() {
+            // Update Turtles
+            game.turtles.forEach(t => {
+                const el = document.getElementById(`turtle_${t.id}`);
+                const lane = document.getElementById(`lane_${t.id}`);
+
+                if (el && lane) {
+                    const pos = t.progress * 0.9; // Scale to 90% to fit track
+                    el.style.left = `${pos}%`;
+
+                    const label = el.querySelector('.turtle-label');
+                    if (t.is_stopped) {
+                        el.style.opacity = '0.7';
+                        label.innerHTML = `🛑 ${t.name} (${t.stop_timer}s)`;
+                    } else {
+                        el.style.opacity = '1.0';
+                        label.innerText = t.name;
+                    }
+
+                    // Obstacles
+                    t.obstacle_history.forEach((obs, idx) => {
+                        const existingObs = lane.querySelector(`.obstacle-icon[data-idx="${idx}"]`);
+                        if (!existingObs) {
+                            const obsEl = document.createElement('div');
+                            obsEl.className = 'obstacle-icon';
+                            obsEl.setAttribute('data-idx', idx);
+                            obsEl.style.left = `${obs.pos * 0.9}%`;
+
+                            let icon = '';
+                            if (obs.type === 'wind') icon = '🌬️';
+                            else if (obs.type === 'hurdle') icon = '🚧';
+                            else if (obs.type === 'stone') icon = '🪨';
+                            else if (obs.type === 'puddle') icon = '💧';
+
+                            obsEl.innerText = icon;
+                            lane.appendChild(obsEl);
+                        }
+                    });
+                }
+            });
+
+            // Update Leader
+            if (game.rankings.length > 0) {
+                document.getElementById('leaderName').innerText = game.rankings[0].name;
+            } else {
+                const sorted = [...game.turtles].sort((a, b) => b.progress - a.progress);
+                if (sorted.length > 0) {
+                    document.getElementById('leaderName').innerText = sorted[0].name;
+                }
+            }
+
+            // Show Penalties
+            game.rankings.forEach((t, index) => {
+                const rank = index + 1;
+                const penaltyText = penalties[rank] || "벌칙 없음";
+                const lane = document.getElementById(`lane_${t.id}`);
+                if (lane) {
+                    const penaltyEl = lane.querySelector('.penalty-text');
+                    if (penaltyEl && penaltyEl.style.display === 'none') {
+                        penaltyEl.innerText = `${rank}등: ${t.name} ${penaltyText}`;
+                        penaltyEl.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        function updateLogsUI() {
+            const logContainer = document.getElementById('gameLogs');
+            // Show last 5 logs
+            const recentLogs = game.logs.slice(-5);
+            logContainer.innerHTML = recentLogs.map(log => `<div>${log}</div>`).join('');
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Init
+        generatePenaltyInputs();
+    </script>
+</body>
+
+</html>
